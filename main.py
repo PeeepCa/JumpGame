@@ -38,9 +38,13 @@ class Player:
         self.on_ground = False
         self.is_charging = False
         self.last_space_state = False
-        self.color = RED
+        self.color = RED  # You can keep this for debugging or remove it
         self.MAX_JUMP_CHARGE = 20
         self.bounce_velocity = 0
+
+        # Add these lines for the sprite
+        self.image = pygame.image.load('player.png')  # Replace with your image filename
+        self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def handle_jump(self, space_pressed):
         if self.on_ground:
@@ -124,9 +128,8 @@ class Player:
             self.color = RED
 
     def draw(self, screen, camera_y):
-        adjusted_y = self.y - camera_y
-        pygame.draw.rect(screen, self.color, (self.x, adjusted_y, self.width, self.height))
-
+        adjusted_y = self.rect.y - camera_y
+        screen.blit(self.image, (self.rect.x, adjusted_y))
 
 class Platform:
     def __init__(self, x, y, width=PLATFORM_WIDTH):
