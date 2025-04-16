@@ -13,7 +13,7 @@ PLAYER_HEIGHT = 80
 PLATFORM_WIDTH = 100
 PLATFORM_HEIGHT = 20
 GRAVITY = 0.8
-JUMP_POWER = 15
+JUMP_POWER = 25
 MOVE_SPEED = 5
 FPS = 60
 
@@ -21,8 +21,6 @@ FPS = 60
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-RED = (255, 0, 0)
 
 
 class Player:
@@ -51,22 +49,19 @@ class Player:
         self.on_ground = False
         self.is_charging = False
         self.last_space_state = False
-        self.color = RED  # You can keep this for debugging or remove it
+        self.WALL_BOUNCE_STRENGTH = 20
+        self.BOUNCE_DECAY = 0.85
         self.MAX_JUMP_CHARGE = 20
         self.bounce_velocity = 0
 
     def handle_jump(self, space_pressed):
+        # Consider adding variable jump heights based on how long space is pressed
         if self.on_ground:
             if space_pressed:
-                if not self.is_charging:
-                    self.is_charging = True
-                    self.jump_charge = 0
-                else:
-                    self.jump_charge = min(self.jump_charge + 1, self.MAX_JUMP_CHARGE)
-            elif self.is_charging:
-                jump_power = -(JUMP_POWER + (self.jump_charge / 2))
-                self.velocity_y = jump_power
-                self.is_charging = False
+                self.jump_charge = min(self.jump_charge + 1, self.MAX_JUMP_CHARGE)
+            elif self.last_space_state and not space_pressed:
+                # Jump power could be more dynamic
+                self.velocity_y = -JUMP_POWER * (self.jump_charge / self.MAX_JUMP_CHARGE)
                 self.jump_charge = 0
                 self.on_ground = False
 
@@ -126,15 +121,16 @@ class Player:
         self.y += self.velocity_y
 
         # Screen bounds with bounce
-        wall_bounce_strength = 20  # Increased bounce strength
+        wall_bounce_strength = min(abs(self.velocity_x) + self.WALL_BOUNCE_STRENGTH, self.WALL_BOUNCE_STRENGTH * 1.5)
+        # Wall collision with dynamic bounce
         if self.x < 0:
             self.x = 0
             self.bounce_velocity = wall_bounce_strength
-            self.velocity_x = 0  # Reset regular velocity
+            self.velocity_x = 0
         elif self.x > WINDOW_WIDTH - self.width:
             self.x = WINDOW_WIDTH - self.width
             self.bounce_velocity = -wall_bounce_strength
-            self.velocity_x = 0  # Reset regular velocity
+            self.velocity_x = 0
 
         # Gradually reduce bounce velocity
         if getattr(self, 'bounce_velocity', 0) != 0:
@@ -164,22 +160,37 @@ class PlatformGenerator:
         self.platform_height = PLATFORM_HEIGHT
         self.vertical_gap_min = 80
         self.vertical_gap_max = 150
-        self.max_horizontal_gap = 200
+        self.max_horizontal_gap = 300  # Add this new parameter to control horizontal gaps
         self.generation_buffer = WINDOW_HEIGHT * 3
         self.highest_platform_y = 0
-        # Generate initial platforms
+        self.last_x = WINDOW_WIDTH // 2  # Add this to track the last platform's position
         self.generate_initial_platforms()
+
+    def get_next_platform_x(self, width):
+        # Helper method to calculate next platform x position
+        min_x = max(0, self.last_x - self.max_horizontal_gap)
+        max_x = min(WINDOW_WIDTH - width, self.last_x + self.max_horizontal_gap)
+
+        if min_x > WINDOW_WIDTH - width:
+            min_x = 0
+        if max_x < 0:
+            max_x = WINDOW_WIDTH - width
+
+        new_x = random.randint(min_x, max_x)
+        self.last_x = new_x
+        return new_x
 
     def generate_initial_platforms(self):
         # Create the floor as a regular platform
         floor = Platform(0, WINDOW_HEIGHT - 40, WINDOW_WIDTH)
         self.platforms = [floor]
+        self.last_x = WINDOW_WIDTH // 2
 
         # Generate platforms starting from above the floor
         current_y = WINDOW_HEIGHT - 150
         while current_y > -self.generation_buffer:
             width = random.randint(self.min_platform_width, self.max_platform_width)
-            x = random.randint(0, WINDOW_WIDTH - width)
+            x = self.get_next_platform_x(width)  # Use the new method instead of completely random x
             self.platforms.append(Platform(x, current_y, width))
             current_y -= random.randint(self.vertical_gap_min, self.vertical_gap_max)
 
@@ -266,8 +277,18 @@ class Game:
         self.score = self.calculate_score()
         self.high_score = max(self.score, self.high_score)
 
+        if not self.game_over:
+            # Get the lowest platform's y position
+            lowest_platform = max(
+                p.rect.y for p in self.platform_generator.platforms) if self.platform_generator.platforms else 0
+
+            # If player falls more than 2 screen heights below the lowest platform, game over
+            if self.player.rect.top > lowest_platform + WINDOW_HEIGHT * 2:
+                self.game_over = True
+                return
+
         # Game over when player falls below visible area
-        if self.player.y > self.camera_y + WINDOW_HEIGHT:
+        if self.player.rect.top > self.camera_y + WINDOW_HEIGHT * 1.5:  # 1.5 screens below camera
             self.game_over = True
 
     def draw(self):
