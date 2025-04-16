@@ -40,7 +40,7 @@ class Player:
         self.last_space_state = False
         self.color = RED
         self.MAX_JUMP_CHARGE = 20
-
+        self.bounce_velocity = 0
 
     def handle_jump(self, space_pressed):
         if self.on_ground:
@@ -81,7 +81,10 @@ class Player:
         keys = pygame.key.get_pressed()
         self.velocity_x = 0
 
-        # Only allow horizontal movement when in the air
+        # Handle bounce velocity separately from regular movement
+        bounce_velocity = getattr(self, 'bounce_velocity', 0)
+
+        # Only allow horizontal movement when in the air (for arrow keys)
         if not self.on_ground:
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 self.velocity_x = -self.speed
@@ -93,14 +96,26 @@ class Player:
         if self.velocity_y > 20:  # Terminal velocity
             self.velocity_y = 20
 
-        self.x += self.velocity_x
+        # Apply both regular and bounce velocity
+        self.x += self.velocity_x + bounce_velocity
         self.y += self.velocity_y
 
-        # Screen bounds
+        # Screen bounds with bounce
+        wall_bounce_strength = 20  # Increased bounce strength
         if self.x < 0:
             self.x = 0
+            self.bounce_velocity = wall_bounce_strength
+            self.velocity_x = 0  # Reset regular velocity
         elif self.x > WINDOW_WIDTH - self.width:
             self.x = WINDOW_WIDTH - self.width
+            self.bounce_velocity = -wall_bounce_strength
+            self.velocity_x = 0  # Reset regular velocity
+
+        # Gradually reduce bounce velocity
+        if getattr(self, 'bounce_velocity', 0) != 0:
+            self.bounce_velocity *= 0.85  # Faster decay
+            if abs(self.bounce_velocity) < 0.5:
+                self.bounce_velocity = 0
 
         # Update color only when charging (otherwise keep previous color)
         if self.is_charging:
