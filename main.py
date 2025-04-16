@@ -41,6 +41,7 @@ class Player:
         self.color = RED
         self.MAX_JUMP_CHARGE = 20
 
+
     def handle_jump(self, space_pressed):
         if self.on_ground:
             if space_pressed:
@@ -228,7 +229,7 @@ class Game:
         self.platform_generator.update(self.camera_y)
         # Remove platforms that are too far below the camera view, including the starting platform
         self.platform_generator.platforms = [p for p in self.platform_generator.platforms
-                                             if p.rect.y < self.camera_y + WINDOW_HEIGHT + 100]
+                                             if p.rect.y < self.camera_y + WINDOW_HEIGHT + 400]
 
         self.score = self.calculate_score()
         self.high_score = max(self.score, self.high_score)
