@@ -1,5 +1,6 @@
 import pygame
 import random
+import os
 
 # Initialize Pygame
 pygame.init()
@@ -7,7 +8,8 @@ pygame.init()
 # Constants
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 600
-PLAYER_SIZE = 40
+PLAYER_WIDTH = 50
+PLAYER_HEIGHT = 80
 PLATFORM_WIDTH = 100
 PLATFORM_HEIGHT = 20
 GRAVITY = 0.8
@@ -25,10 +27,21 @@ RED = (255, 0, 0)
 
 class Player:
     def __init__(self, x, y):
-        self.width = PLAYER_SIZE
-        self.height = PLAYER_SIZE
+        self.width = PLAYER_WIDTH
+        self.height = PLAYER_HEIGHT
         self.x = x
         self.y = y
+        # Load sprites
+        self.sprites = {
+            'standing': pygame.image.load(os.path.join('assets', 'player.png')),
+            'jumping': pygame.image.load(os.path.join('assets', 'player_jump.png'))
+        }
+        # Scale all sprites to match player dimensions
+        for key in self.sprites:
+            self.sprites[key] = pygame.transform.scale(self.sprites[key], (self.width, self.height))
+        self.image = self.sprites['standing']  # Default sprite
+        # Add a direction flag
+        self.facing_right = True  # True for right, False for left
         self.velocity_y = 0
         self.velocity_x = 0
         self.speed = MOVE_SPEED
@@ -41,10 +54,6 @@ class Player:
         self.color = RED  # You can keep this for debugging or remove it
         self.MAX_JUMP_CHARGE = 20
         self.bounce_velocity = 0
-
-        # Add these lines for the sprite
-        self.image = pygame.image.load('player.png')  # Replace with your image filename
-        self.image = pygame.transform.scale(self.image, (self.width, self.height))
 
     def handle_jump(self, space_pressed):
         if self.on_ground:
@@ -83,6 +92,18 @@ class Player:
 
     def update(self):
         keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_LEFT]:
+            self.facing_right = False
+        elif keys[pygame.K_RIGHT]:
+            self.facing_right = True
+        if not self.on_ground:
+            self.image = self.sprites['jumping']
+        else:
+            self.image = self.sprites['standing']
+        if not self.facing_right:
+            self.image = pygame.transform.flip(self.image, True, False)
+
         self.velocity_x = 0
 
         # Handle bounce velocity separately from regular movement
@@ -121,12 +142,6 @@ class Player:
             if abs(self.bounce_velocity) < 0.5:
                 self.bounce_velocity = 0
 
-        # Update color only when charging (otherwise keep previous color)
-        if self.is_charging:
-            self.color = BLUE
-        else:
-            self.color = RED
-
     def draw(self, screen, camera_y):
         adjusted_y = self.rect.y - camera_y
         screen.blit(self.image, (self.rect.x, adjusted_y))
@@ -152,7 +167,6 @@ class PlatformGenerator:
         self.max_horizontal_gap = 200
         self.generation_buffer = WINDOW_HEIGHT * 3
         self.highest_platform_y = 0
-
         # Generate initial platforms
         self.generate_initial_platforms()
 
@@ -285,7 +299,6 @@ class Game:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.running = False
-
             self.update()
             self.draw()
             self.clock.tick(FPS)
