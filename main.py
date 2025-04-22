@@ -138,9 +138,32 @@ class Player:
             if abs(self.bounce_velocity) < 0.5:
                 self.bounce_velocity = 0
 
+    def get_charge_color(self):
+        # Convert charge level to a color from green to red
+        charge_ratio = self.jump_charge / self.MAX_JUMP_CHARGE
+        # RGB interpolation from green (0, 255, 0) to red (255, 0, 0)
+        red = int(255 * charge_ratio)
+        green = int(255 * (1 - charge_ratio))
+        return red, green, 0
+
     def draw(self, screen, camera_y):
         adjusted_y = self.rect.y - camera_y
         screen.blit(self.image, (self.rect.x, adjusted_y))
+
+        # Draw charge indicator if charging
+        if self.last_space_state:
+            # Calculate indicator dimensions
+            indicator_width = self.width * (self.jump_charge / self.MAX_JUMP_CHARGE)
+            indicator_height = 5
+            indicator_y = adjusted_y + self.height + 5  # Position it 5 pixels below the player
+
+            # Draw the charge bar
+            pygame.draw.rect(screen, self.get_charge_color(),
+                             (self.rect.x, indicator_y, indicator_width, indicator_height))
+            # Draw the empty bar outline
+            pygame.draw.rect(screen, BLACK,
+                             (self.rect.x, indicator_y, self.width, indicator_height), 1)
+
 
 class Platform:
     def __init__(self, x, y, width=PLATFORM_WIDTH):
