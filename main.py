@@ -14,7 +14,7 @@ PLATFORM_WIDTH = 100
 PLATFORM_HEIGHT = 20
 GRAVITY = 0.8
 JUMP_POWER = 25
-MOVE_SPEED = 5
+MOVE_SPEED = 3.5
 FPS = 60
 
 # Colors
@@ -58,7 +58,7 @@ class Player:
         # Consider adding variable jump heights based on how long space is pressed
         if self.on_ground:
             if space_pressed:
-                self.jump_charge = min(self.jump_charge + 1, self.MAX_JUMP_CHARGE)
+                self.jump_charge = min(self.jump_charge + 0.5, self.MAX_JUMP_CHARGE)
             elif self.last_space_state and not space_pressed:
                 # Jump power could be more dynamic
                 self.velocity_y = -JUMP_POWER * (self.jump_charge / self.MAX_JUMP_CHARGE)
