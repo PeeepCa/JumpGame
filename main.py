@@ -16,6 +16,9 @@ GRAVITY = 0.8
 JUMP_POWER = 25
 MOVE_SPEED = 3.5
 FPS = 60
+BOUNCE_DECAY = 0.85
+MAX_JUMP_CHARGE = 20
+WALL_BOUNCE_STRENGTH = 20
 
 # Colors
 WHITE = (255, 255, 255)
@@ -49,9 +52,9 @@ class Player:
         self.on_ground = False
         self.is_charging = False
         self.last_space_state = False
-        self.WALL_BOUNCE_STRENGTH = 20
-        self.BOUNCE_DECAY = 0.85
-        self.MAX_JUMP_CHARGE = 20
+        self.WALL_BOUNCE_STRENGTH = WALL_BOUNCE_STRENGTH
+        self.BOUNCE_DECAY = BOUNCE_DECAY
+        self.MAX_JUMP_CHARGE = MAX_JUMP_CHARGE
         self.bounce_velocity = 0
 
     def handle_jump(self, space_pressed):
